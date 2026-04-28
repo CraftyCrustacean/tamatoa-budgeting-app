@@ -2,4 +2,18 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- background colours -->
+    <color name="bg_app">#121212</color>
+    <color name="bg_card">#1E1E1E</color>
+    <color name="bg_elevated">#2A2A2A</color>
+
+    <!-- text colours -->
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#B0B0B0</color>
+
+    <!-- accent colours -->
+    <color name="accent_dashboard">#F2A03D</color>
+    <color name="accent_transactions">#3DBE6F</color>
+    <color name="accent_achievements">#D14B8F</color>
 </resources>
