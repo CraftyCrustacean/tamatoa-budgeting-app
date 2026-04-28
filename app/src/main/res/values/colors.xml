@@ -16,4 +16,12 @@
     <color name="accent_dashboard">#F2A03D</color>
     <color name="accent_transactions">#3DBE6F</color>
     <color name="accent_achievements">#D14B8F</color>
+
+    <!-- pre loaded category colours -->
+    <color name="cat_pink">#D14B8F</color>
+    <color name="cat_blue">#4B8FE0</color>
+    <color name="cat_yellow">#E0C04B</color>
+    <color name="cat_green">#3DBE6F</color>
+    <color name="cat_orange">#F2A03D</color>
+    <color name="cat_purple">#9B59B6</color>
 </resources>

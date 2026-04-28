@@ -1,10 +1,12 @@
 package com.example.tamatoa.ui
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import com.example.tamatoa.AddExpenseActivity
 import com.example.tamatoa.databinding.FragmentDashboardBinding
 
 //Dashboard fragment, placeholder currently will be fixed soon^(tm)
@@ -23,6 +25,13 @@ class DashboardFragment : Fragment() {
     ): View {
         _binding = FragmentDashboardBinding.inflate(inflater, container, false)
         return binding.root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        binding.addExpenseFab.setOnClickListener {
+            startActivity(Intent(requireContext(), AddExpenseActivity::class.java))
+        }
     }
 
     override fun onDestroyView() {

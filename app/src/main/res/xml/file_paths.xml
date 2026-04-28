@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!--save photos to the apps external file directory-->
+    <!--https://www.youtube.com/watch?v=FTKWgcIYomY at 5:25 (so i can return to it)-->
+    <external-files-path
+        name="expense_photos"
+        path="Pictures/" />
+</paths>

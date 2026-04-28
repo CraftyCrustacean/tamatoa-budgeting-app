@@ -30,7 +30,7 @@ class LoginActivity : AppCompatActivity() {
 
         // go to main screen if someone is already logged in
         if (Session.isLoggedIn(this)) {
-            Log.d(TAG, "onCreate: already logged in, skipping login")
+            Log.d(TAG, "on create: already logged in, skipping login")
             goToMain()
             return
         }

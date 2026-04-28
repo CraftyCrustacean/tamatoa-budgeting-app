@@ -26,7 +26,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // if no user is logged in and somehow they get to this activity, redirect to login
+        // if no user is logged in and if somehow they get to this activity, redirect to login
         if (!Session.isLoggedIn(this)) {
             Log.d(TAG, "On Create: not logged in, redirecting to login")
             startActivity(Intent(this, LoginActivity::class.java))

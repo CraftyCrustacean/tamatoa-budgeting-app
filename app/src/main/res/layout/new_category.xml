@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Category name"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/nameInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textCapWords"
+            android:maxLength="20"/>
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Colour"
+        android:textColor="@color/text_primary"
+        android:textStyle="bold"/>
+
+    <!-- set colour options because im doing this solo and dont have time for a colour picker -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center">
+
+        <View android:id="@+id/palettePink"   style="@style/ColourPalette" android:background="@color/cat_pink"/>
+        <View android:id="@+id/paletteBlue"   style="@style/ColourPalette" android:background="@color/cat_blue"/>
+        <View android:id="@+id/paletteYellow" style="@style/ColourPalette" android:background="@color/cat_yellow"/>
+        <View android:id="@+id/paletteGreen"  style="@style/ColourPalette" android:background="@color/cat_green"/>
+        <View android:id="@+id/paletteOrange" style="@style/ColourPalette" android:background="@color/cat_orange"/>
+        <View android:id="@+id/palettePurple" style="@style/ColourPalette" android:background="@color/cat_purple"/>
+    </LinearLayout>
+</LinearLayout>
