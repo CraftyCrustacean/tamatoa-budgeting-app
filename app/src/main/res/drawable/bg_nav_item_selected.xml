@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- when a tab is selected a pill will highlight it -->
+    <item android:state_checked="true">
+        <shape android:shape="rectangle">
+            <corners android:radius="30dp"/>
+            <solid android:color="@android:color/white"/>
+            <padding
+                android:left="16dp"
+                android:right="16dp" />
+        </shape>
+    </item>
+    <!-- if its not selected: nothing -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@android:color/transparent"/>
+        </shape>
+    </item>
+</selector>
