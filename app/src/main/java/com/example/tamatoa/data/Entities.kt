@@ -8,6 +8,8 @@ import androidx.room.PrimaryKey
 //This file outlined the tables that the database requires
 //Information on how each table should be made was found at:
 //https://developer.android.com/training/data-storage/room/defining-data
+//https://www.youtube.com/watch?v=bOd3wO0uFr8
+//https://www.youtube.com/watch?v=sWOmlDvz_3U
 
 @Entity(tableName = "users")
 data class UserEntity(

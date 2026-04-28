@@ -4,6 +4,8 @@ import android.util.Log
 
 //Create a copy of any recurring payment for this month if it doesnt already exist
 //Called everytime the user opens the dashboard
+//information found from: https://www.youtube.com/watch?v=nuLyv70ViLc
+//https://www.youtube.com/watch?v=opT7iABvisY
 
 object RecurringExpenseGenerator {
 

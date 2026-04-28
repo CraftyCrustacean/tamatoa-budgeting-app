@@ -11,6 +11,8 @@ import kotlinx.coroutines.launch
 
 //Class to define the database config and serves as the access point for the app
 //Information found at: https://developer.android.com/training/data-storage/room#database
+//https://www.youtube.com/watch?v=bOd3wO0uFr8
+//https://www.youtube.com/watch?v=sWOmlDvz_3U
 @Database(
     entities = [
         UserEntity::class,

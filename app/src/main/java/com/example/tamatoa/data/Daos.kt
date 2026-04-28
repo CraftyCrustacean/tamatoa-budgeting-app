@@ -7,9 +7,10 @@ import androidx.room.Query
 
 //Data access object defining the methods that are needed to manipulate the database
 //Information found at: https://developer.android.com/training/data-storage/room/accessing-data
+//https://www.youtube.com/watch?v=bOd3wO0uFr8
+//https://www.youtube.com/watch?v=sWOmlDvz_3U
 
 // User methods
-
 @Dao
 interface UserDao {
 
@@ -30,7 +31,6 @@ interface CategoryDao {
     //insert new category into the table
     @Insert
     suspend fun insert(category: CategoryEntity): Long
-
     //fetch the categories tied to a user id (logged in user)
     @Query("SELECT * FROM categories WHERE userId = :userId ORDER BY name ASC")
     suspend fun getForUser(userId: Long): List<CategoryEntity>
