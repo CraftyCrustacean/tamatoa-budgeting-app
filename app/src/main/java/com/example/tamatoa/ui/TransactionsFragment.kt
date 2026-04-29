@@ -16,6 +16,7 @@ import com.example.tamatoa.PhotoViewerActivity
 import com.example.tamatoa.Session
 import com.example.tamatoa.data.AppDatabase
 import com.example.tamatoa.data.DateUtils
+import com.example.tamatoa.data.ExpenseWithCategory
 import com.example.tamatoa.data.RecurringExpenseGenerator
 import com.example.tamatoa.databinding.FragmentTransactionsBinding
 import kotlinx.coroutines.launch
@@ -29,6 +30,7 @@ import java.util.Calendar
 //https://www.youtube.com/watch?v=MWkplgwdY20
 //https://stackoverflow.com/questions/51968709/android-studio-bottom-bar-nav-how-do-i-add-to-each-fragment
 //https://www.youtube.com/watch?v=OV25x3a55pk
+//https://www.youtube.com/watch?v=u26D04J7Q-E
 class TransactionsFragment : Fragment() {
 
     private var _binding: FragmentTransactionsBinding? = null
@@ -56,14 +58,18 @@ class TransactionsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        adapter = ExpensesAdapter { expense ->
-            // if there is a photo open it when the entry is tapped
-            if (expense.photoPath != null) {
-                val i = Intent(requireContext(), PhotoViewerActivity::class.java)
-                i.putExtra(PhotoViewerActivity.EXTRA_PHOTO_PATH, expense.photoPath)
-                startActivity(i)
+        adapter = ExpensesAdapter(
+            onItemClick = { expense ->
+                if (expense.photoPath != null) {
+                    val i = Intent(requireContext(), PhotoViewerActivity::class.java)
+                    i.putExtra(PhotoViewerActivity.EXTRA_PHOTO_PATH, expense.photoPath)
+                    startActivity(i)
+                }
+            },
+            onItemLongClick = { expense ->
+                confirmDelete(expense)
             }
-        }
+        )
 
         binding.expensesRecycler.layoutManager = LinearLayoutManager(requireContext())
         binding.expensesRecycler.adapter = adapter
@@ -192,6 +198,28 @@ class TransactionsFragment : Fragment() {
             setTitle("Start date")
             show()
         }
+    }
+
+    //a way to delete expenses in the list
+    private fun confirmDelete(expense: ExpenseWithCategory) {
+        AlertDialog.Builder(requireContext())
+            .setTitle("Delete this expense?")
+            .setMessage("This can't be undone.")
+            .setPositiveButton("Delete") { _, _ ->
+                lifecycleScope.launch {
+                    try {
+                        //call the delete dao and delete the selected expense by id
+                        val db = AppDatabase.getInstance(requireContext())
+                        db.expenseDao().deleteById(expense.id)
+                        Log.d(TAG, "deleted expense id=${expense.id}")
+                        loadExpenses()
+                    } catch (e: Exception) {
+                        Log.e(TAG, "delete: error", e)
+                    }
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
     override fun onDestroyView() {

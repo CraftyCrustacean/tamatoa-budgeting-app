@@ -15,7 +15,8 @@ import com.example.tamatoa.data.ExpenseWithCategory
 //https://www.youtube.com/watch?v=opT7iABvisY
 class ExpensesAdapter(
     private var items: List<ExpenseWithCategory> = emptyList(),
-    private val onItemClick: (ExpenseWithCategory) -> Unit
+    private val onItemClick: (ExpenseWithCategory) -> Unit,
+    private val onItemLongClick: (ExpenseWithCategory) -> Unit
 ) : RecyclerView.Adapter<ExpensesAdapter.Holder>() {
 
     //find the data for each row
@@ -63,6 +64,7 @@ class ExpensesAdapter(
             if (item.photoPath != null) View.VISIBLE else View.GONE
 
         holder.itemView.setOnClickListener { onItemClick(item) }
+        holder.itemView.setOnLongClickListener { onItemLongClick(item); true }
     }
 
     //Replace data and refresh the list
