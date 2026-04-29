@@ -24,4 +24,8 @@
     <color name="cat_green">#3DBE6F</color>
     <color name="cat_orange">#F2A03D</color>
     <color name="cat_purple">#9B59B6</color>
+
+    <color name="progress_ok">#3DBE6F</color>
+    <color name="progress_warn">#F2A03D</color>
+    <color name="progress_over">#E04848</color>
 </resources>

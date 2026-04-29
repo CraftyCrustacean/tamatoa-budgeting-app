@@ -26,6 +26,9 @@ import java.util.Calendar
 //information found from: https://www.youtube.com/watch?v=nuLyv70ViLc
 //https://www.youtube.com/watch?v=opT7iABvisY
 //https://www.youtube.com/watch?v=DugmDbggwcQ
+//https://www.youtube.com/watch?v=MWkplgwdY20
+//https://stackoverflow.com/questions/51968709/android-studio-bottom-bar-nav-how-do-i-add-to-each-fragment
+//https://www.youtube.com/watch?v=OV25x3a55pk
 class TransactionsFragment : Fragment() {
 
     private var _binding: FragmentTransactionsBinding? = null
