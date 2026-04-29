@@ -39,6 +39,8 @@ class DashboardFragment : Fragment() {
     private var rangeStart: Long = 0L
     private var rangeEnd: Long = 0L
 
+    private lateinit var totalsAdapter: CategoryTotalsAdapter
+
     companion object {
         private const val TAG = "DashboardFragment"
 
@@ -58,6 +60,12 @@ class DashboardFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        //turn the recycler view on
+        totalsAdapter = CategoryTotalsAdapter()
+        binding.totalsRecycler.layoutManager =
+            androidx.recyclerview.widget.LinearLayoutManager(requireContext())
+        binding.totalsRecycler.adapter = totalsAdapter
 
         binding.budgetCard.setOnClickListener { showSetBudgetDialog() }
         binding.periodLabel.setOnClickListener { showPeriodPicker() }
@@ -88,6 +96,7 @@ class DashboardFragment : Fragment() {
     }
 
     //get the budget of logged in user and how much theyve spent over the current date range
+    //also get the total amount spent per category in the current date range
     private fun refresh() {
         val userId = Session.getUserId(requireContext())
         lifecycleScope.launch {
@@ -95,13 +104,25 @@ class DashboardFragment : Fragment() {
                 val db = AppDatabase.getInstance(requireContext())
                 val budget = db.budgetDao().get(userId)
                 val spend = db.expenseDao().getTotalSpend(userId, rangeStart, rangeEnd)
-
-                Log.d(TAG, "refresh: budget=${budget?.maxSpend} spent=$spend")
+                val totals = db.expenseDao().getCategoryTotals(userId, rangeStart, rangeEnd)
+                Log.d(TAG, "refresh: budget=${budget?.maxSpend} spent=$spend categories=${totals.size}")
                 renderBudgetCard(budget, spend)
+                renderTotals(totals)
             } catch (e: Exception) {
                 Log.e(TAG, "refresh: error", e)
             }
         }
+    }
+
+    //only show categories that had money spent in them
+    private fun renderTotals(totals: List<com.example.tamatoa.data.CategoryTotal>) {
+        //total must be greater than 0
+        val nonZero = totals.filter { it.total > 0.0 }
+        totalsAdapter.submit(nonZero)
+        //if the list is empty then show the empty totals view (hide the list)
+        binding.totalsEmpty.visibility = if (nonZero.isEmpty()) View.VISIBLE else View.GONE
+        //if the list isnt empty show the list (hide the empty totals)
+        binding.totalsRecycler.visibility = if (nonZero.isEmpty()) View.GONE else View.VISIBLE
     }
 
     private fun renderBudgetCard(budget: BudgetEntity?, spent: Double) {

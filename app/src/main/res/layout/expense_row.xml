@@ -57,7 +57,7 @@
                 android:id="@+id/photoMarc"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="ඞ"
+                android:text="📎"
                 android:textSize="13sp"
                 android:layout_marginStart="6dp"
                 android:visibility="gone"/>
