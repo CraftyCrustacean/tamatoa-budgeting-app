@@ -15,7 +15,8 @@ import androidx.room.PrimaryKey
 data class UserEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val username: String,
-    val password: String   // Stored as plain text since this is a prototype
+    val password: String,   // Stored as plain text since this is a prototype
+    val createdAtMillis: Long = System.currentTimeMillis() //used for achievement tracking
 )
 
 @Entity(
@@ -86,4 +87,37 @@ data class BudgetEntity(
     val userId: Long,
     val maxSpend: Double,
     val minSave: Double
+)
+
+@Entity(
+    tableName = "app_opens",
+    foreignKeys = [ForeignKey(
+        entity = UserEntity::class,
+        parentColumns = ["id"],
+        childColumns = ["userId"],
+        onDelete = ForeignKey.CASCADE
+    )],
+    indices = [Index(value = ["userId", "dateKey"], unique = true)]
+)
+data class AppOpenEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val userId: Long,
+    val dateKey: String
+)
+
+@Entity(
+    tableName = "badges_earned",
+    foreignKeys = [ForeignKey(
+        entity = UserEntity::class,
+        parentColumns = ["id"],
+        childColumns = ["userId"],
+        onDelete = ForeignKey.CASCADE
+    )],
+    indices = [Index(value = ["userId", "badgeId"], unique = true)]
+)
+data class BadgeEarnedEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val userId: Long,
+    val badgeId: String,
+    val earnedAtTime: Long
 )

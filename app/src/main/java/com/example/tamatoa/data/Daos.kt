@@ -21,6 +21,14 @@ interface UserDao {
     //fetch the user that matches an entered username and password
     @Query("SELECT * FROM users WHERE username = :username AND password = :password LIMIT 1")
     suspend fun login(username: String, password: String): UserEntity?
+
+    //fetch a specific user
+    @Query("SELECT * FROM users WHERE id = :userId LIMIT 1")
+    suspend fun getById(userId: Long): UserEntity?
+
+    //change the date a users account was created, used by the seeder
+    @Query("UPDATE users SET createdAtMillis = :newMillis WHERE id = :userId")
+    suspend fun updateCreatedAt(userId: Long, newMillis: Long)
 }
 
 //Category Methods
@@ -58,6 +66,11 @@ data class ExpenseWithCategory(
     val recurringSourceId: Long?,
     val categoryName: String,
     val categoryColour: String
+)
+
+data class DailySpend(
+    val dayKey: String,
+    val total: Double
 )
 
 @Dao
@@ -126,13 +139,41 @@ interface ExpenseDao {
         SELECT * FROM expenses
         WHERE recurringSourceId = :templateId
           AND dateMillis BETWEEN :startMillis AND :endMillis
-        LIMIT 1
-    """)
+        LIMIT 1 """)
     suspend fun findGeneratedCopy(
         templateId: Long,
         startMillis: Long,
         endMillis: Long
     ): ExpenseEntity?
+
+    //find days where the user logged an expense, used by the no expense badge to see when they
+    //didnt log any
+    @Query("""
+    SELECT DISTINCT strftime('%Y-%m-%d', dateMillis / 1000, 'unixepoch', 'localtime') AS dayKey
+    FROM expenses
+    WHERE userId = :userId AND dateMillis >= :startMillis
+    ORDER BY dayKey ASC """)
+    suspend fun getDistinctSpendDays(userId: Long, startMillis: Long): List<String>
+
+    @Query("""
+    SELECT e.id, e.categoryId, e.dateMillis, e.description, e.amount, e.photoPath,
+           e.isRecurring, e.recurringSourceId,
+           c.name AS categoryName, c.colour AS categoryColour
+    FROM expenses e
+    INNER JOIN categories c ON c.id = e.categoryId
+    WHERE e.userId = :userId
+    ORDER BY e.dateMillis ASC """)
+    suspend fun getAllForUser(userId: Long): List<ExpenseWithCategory>
+
+    //used to get monthly spending for the line graph
+    @Query("""
+    SELECT strftime('%Y-%m-%d', dateMillis / 1000, 'unixepoch', 'localtime') AS dayKey,
+           COALESCE(SUM(amount), 0) AS total
+    FROM expenses
+    WHERE userId = :userId AND dateMillis BETWEEN :startMillis AND :endMillis
+    GROUP BY dayKey
+    ORDER BY dayKey ASC""")
+    suspend fun getDailySpend(userId: Long, startMillis: Long, endMillis: Long): List<DailySpend>
 }
 
 //Budget methods
@@ -146,4 +187,30 @@ interface BudgetDao {
     //get budget for logged in user
     @Query("SELECT * FROM budgets WHERE userId = :userId LIMIT 1")
     suspend fun get(userId: Long): BudgetEntity?
+}
+
+@Dao
+interface AppOpenDao {
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun record(open: AppOpenEntity): Long
+
+    //count how many times a user has opened the app
+    @Query("SELECT COUNT(*) FROM app_opens WHERE userId = :userId")
+    suspend fun countForUser(userId: Long): Int
+}
+
+@Dao
+interface BadgeDao {
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun award(badge: BadgeEarnedEntity): Long
+
+    //get what badges have been earned by the logged in user
+    @Query("SELECT badgeId FROM badges_earned WHERE userId = :userId")
+    suspend fun getEarnedBadgeIds(userId: Long): List<String>
+
+    //get how many badges have been earned by the user
+    @Query("SELECT COUNT(*) > 0 FROM badges_earned WHERE userId = :userId AND badgeId = :badgeId")
+    suspend fun hasBadge(userId: Long, badgeId: String): Boolean
 }

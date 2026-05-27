@@ -18,9 +18,11 @@ import kotlinx.coroutines.launch
         UserEntity::class,
         CategoryEntity::class,
         ExpenseEntity::class,
-        BudgetEntity::class
+        BudgetEntity::class,
+        AppOpenEntity::class,
+        BadgeEarnedEntity::class
     ],
-    version = 1,
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -29,6 +31,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun categoryDao(): CategoryDao
     abstract fun expenseDao(): ExpenseDao
     abstract fun budgetDao(): BudgetDao
+    abstract fun appOpenDao(): AppOpenDao
+    abstract fun badgeDao(): BadgeDao
 
     companion object {
         private const val TAG = "AppDatabase"
@@ -70,5 +74,7 @@ abstract class AppDatabase : RoomDatabase() {
                 dao.insert(CategoryEntity(userId = userId, name = name, colour = colour))
             }
         }
+
+
     }
 }

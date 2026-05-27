@@ -57,4 +57,9 @@ object DateUtils {
         now.set(Calendar.MILLISECOND, 0)
         return now.timeInMillis
     }
+
+    //convert different date/time formats into yyyy-mm-dd so that we can properly track days
+    //for badges
+    private val dayKeyFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    fun dayKey(millis: Long): String = dayKeyFormat.format(Date(millis))
 }

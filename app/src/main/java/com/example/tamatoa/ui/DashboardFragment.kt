@@ -22,6 +22,23 @@ import com.example.tamatoa.databinding.FragmentDashboardBinding
 import com.google.android.material.textfield.TextInputEditText
 import kotlinx.coroutines.launch
 import java.util.Calendar
+import android.graphics.Color
+import com.github.mikephil.charting.animation.Easing
+import com.github.mikephil.charting.data.PieData
+import com.github.mikephil.charting.data.PieDataSet
+import com.github.mikephil.charting.data.PieEntry
+import com.github.mikephil.charting.components.LimitLine
+import com.github.mikephil.charting.components.XAxis
+import com.github.mikephil.charting.data.Entry
+import com.github.mikephil.charting.data.LineData
+import com.github.mikephil.charting.data.LineDataSet
+import com.example.tamatoa.data.DailySpend
+import android.graphics.drawable.GradientDrawable
+import android.view.Gravity
+import android.widget.GridLayout
+import android.widget.TextView
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 //Home screen, houses: budget tracker and category totals, will also have graphs in p3
 
@@ -30,6 +47,12 @@ import java.util.Calendar
 //and https://www.youtube.com/watch?v=OV25x3a55pk
 //https://bterczynski.medium.com/android-clipdrawable-897a308ca58
 //https://www.youtube.com/watch?v=vFziVSSIX6Q
+
+//graph info found at: https://www.youtube.com/watch?v=5XOabSpW_Os
+//https://www.youtube.com/watch?v=DD1CxoVONFE
+//https://www.youtube.com/watch?v=MiVx3AQD_PI
+//Heatmap based on information from:https://medium.com/@ali.zahid050/%EF%B8%8F-building-a-custom-calendarview-in-android-from-scratch-11d03b7b18f4
+//https://www.alanzucconi.com/2016/01/06/colour-interpolation/
 class DashboardFragment : Fragment() {
 
     private var _binding: FragmentDashboardBinding? = null
@@ -61,11 +84,13 @@ class DashboardFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        //turn the recycler view on
+        //replaced the recycler view with new pie chart
         totalsAdapter = CategoryTotalsAdapter()
-        binding.totalsRecycler.layoutManager =
+        binding.pieLegend.layoutManager =
             androidx.recyclerview.widget.LinearLayoutManager(requireContext())
-        binding.totalsRecycler.adapter = totalsAdapter
+        binding.pieLegend.adapter = totalsAdapter
+        configurePieChart()
+        configureLineChart()
 
         binding.budgetCard.setOnClickListener { showSetBudgetDialog() }
         binding.periodLabel.setOnClickListener { showPeriodPicker() }
@@ -105,24 +130,69 @@ class DashboardFragment : Fragment() {
                 val budget = db.budgetDao().get(userId)
                 val spend = db.expenseDao().getTotalSpend(userId, rangeStart, rangeEnd)
                 val totals = db.expenseDao().getCategoryTotals(userId, rangeStart, rangeEnd)
+                val monthStart = DateUtils.startOfMonth(System.currentTimeMillis())
+                val monthEnd = DateUtils.endOfMonth(System.currentTimeMillis())
+                val dailySpend = db.expenseDao().getDailySpend(userId, monthStart, monthEnd)
+
                 Log.d(TAG, "refresh: budget=${budget?.maxSpend} spent=$spend categories=${totals.size}")
                 renderBudgetCard(budget, spend)
                 renderTotals(totals)
+                renderLineChart(dailySpend, budget)
+                renderHeatmap(dailySpend)
             } catch (e: Exception) {
                 Log.e(TAG, "refresh: error", e)
             }
         }
     }
 
-    //only show categories that had money spent in them
+
+    //feeds the pue chart and the legend list the same data
     private fun renderTotals(totals: List<com.example.tamatoa.data.CategoryTotal>) {
-        //total must be greater than 0
         val nonZero = totals.filter { it.total > 0.0 }
+
+        if (nonZero.isEmpty()) {
+            binding.pieEmpty.visibility = View.VISIBLE
+            binding.pieChart.visibility = View.GONE
+            binding.pieLegend.visibility = View.GONE
+            return
+        }
+
+        binding.pieEmpty.visibility = View.GONE
+        binding.pieChart.visibility = View.VISIBLE
+        binding.pieLegend.visibility = View.VISIBLE
+
+        // Build pie entries and colours from the per-category totals.
+        val entries = nonZero.map { PieEntry(it.total.toFloat(), it.name) }
+        val sliceColours = nonZero.map { runCatching { Color.parseColor(it.colour) }.getOrDefault(Color.GRAY) }
+
+        val dataSet = PieDataSet(entries, "").apply {
+            colors = sliceColours
+            // Don't draw values on slices - the legend below carries the numbers.
+            setDrawValues(false)
+            sliceSpace = 2f
+        }
+
+        binding.pieChart.data = PieData(dataSet)
+        binding.pieChart.invalidate()
+
+        // Legend / totals list.
         totalsAdapter.submit(nonZero)
-        //if the list is empty then show the empty totals view (hide the list)
-        binding.totalsEmpty.visibility = if (nonZero.isEmpty()) View.VISIBLE else View.GONE
-        //if the list isnt empty show the list (hide the empty totals)
-        binding.totalsRecycler.visibility = if (nonZero.isEmpty()) View.GONE else View.VISIBLE
+    }
+
+    private fun configurePieChart() {
+        binding.pieChart.apply {
+            description.isEnabled = false
+            //no need for built in legend
+            legend.isEnabled = false
+            //show totals as is, not as a percent
+            setDrawEntryLabels(false)
+            setUsePercentValues(false)
+            setHoleColor(Color.TRANSPARENT)
+            setDrawCenterText(false)
+            holeRadius = 55f
+            transparentCircleRadius = 58f
+            animateY(700, Easing.EaseInOutQuad)
+        }
     }
 
     private fun renderBudgetCard(budget: BudgetEntity?, spent: Double) {
@@ -283,6 +353,250 @@ class DashboardFragment : Fragment() {
             cal.get(Calendar.MONTH),
             cal.get(Calendar.DAY_OF_MONTH)
         ).apply { setTitle("Start date"); show() }
+    }
+
+
+    private fun configureLineChart() {
+        binding.lineChart.apply {
+            description.isEnabled = false
+            legend.isEnabled = false
+            //cant zoom or scroll
+            setTouchEnabled(false)
+            setDrawGridBackground(false)
+            setNoDataText("")
+
+            //x axis shows days of the month
+            xAxis.position = XAxis.XAxisPosition.BOTTOM
+            xAxis.textColor = Color.parseColor("#B0B0B0")
+            xAxis.setDrawGridLines(false)
+            xAxis.granularity = 1f
+
+            //y axis shows how much is spent
+            axisLeft.textColor = Color.parseColor("#B0B0B0")
+            axisLeft.setDrawGridLines(true)
+            axisLeft.gridColor = Color.parseColor("#22FFFFFF")
+            axisLeft.axisMinimum = 0f
+
+            //hide the right y axis
+            axisRight.isEnabled = false
+        }
+    }
+
+
+    //plots the cumulative spend for the current month
+    //adds a two dashed lines to show budget and savings goals
+    private fun renderLineChart(dailySpend: List<DailySpend>, budget: BudgetEntity?) {
+        val chart = binding.lineChart
+
+        if (dailySpend.isEmpty()) {
+            binding.lineEmpty.visibility = View.VISIBLE
+            chart.visibility = View.GONE
+            return
+        }
+        binding.lineEmpty.visibility = View.GONE
+        chart.visibility = View.VISIBLE
+
+        //fetch how many days are in the current month
+        val cal = Calendar.getInstance()
+        val daysInMonth = cal.getActualMaximum(Calendar.DAY_OF_MONTH)
+
+        //go day by day and count spent, if there is a gap fill it with the previous spend for a flat line
+        val byDay = dailySpend.associateBy { it.dayKey }
+        val monthPrefix = DateUtils.dayKey(System.currentTimeMillis()).substring(0, 7) // "YYYY-MM"
+
+        val entries = mutableListOf<Entry>()
+        var runningTotal = 0f
+
+        for (day in 1..daysInMonth) {
+            val dayKey = "%s-%02d".format(monthPrefix, day)
+            val dayTotal = byDay[dayKey]?.total?.toFloat() ?: 0f
+            runningTotal += dayTotal
+            entries.add(Entry(day.toFloat(), runningTotal))
+        }
+
+        val dataSet = LineDataSet(entries, "Expenses").apply {
+            color = Color.parseColor("#F2A03D")
+            lineWidth = 2.5f
+            setDrawCircles(false)
+            setDrawValues(false)
+            setDrawFilled(true)
+            fillColor = Color.parseColor("#F2A03D")
+            fillAlpha = 60
+            mode = LineDataSet.Mode.LINEAR
+        }
+        chart.data = LineData(dataSet)
+
+        //lines for budget and savings goals
+        chart.axisLeft.removeAllLimitLines()
+        chart.axisLeft.resetAxisMaximum()
+        budget?.let {
+            if (it.maxSpend > 0.0) {
+
+                chart.axisLeft.axisMaximum = it.maxSpend.toFloat() * 1.1f
+
+                chart.axisLeft.addLimitLine(LimitLine(it.maxSpend.toFloat(), "Budget").apply {
+                    lineColor = Color.parseColor("#E04848")
+                    lineWidth = 1.5f
+                    enableDashedLine(10f, 6f, 0f)
+                    textColor = Color.parseColor("#E04848")
+                    textSize = 10f
+                })
+            }
+            if (it.minSave > 0.0 && it.maxSpend > it.minSave) {
+                val saveCeiling = (it.maxSpend - it.minSave).toFloat()
+                chart.axisLeft.addLimitLine(LimitLine(saveCeiling, "Savings goal").apply {
+                    lineColor = Color.parseColor("#3DBE6F")
+                    lineWidth = 1.5f
+                    enableDashedLine(10f, 6f, 0f)
+                    textColor = Color.parseColor("#3DBE6F")
+                    textSize = 10f
+                })
+            }
+        }
+
+        chart.invalidate()
+    }
+
+    //the big heatmap function
+    private fun renderHeatmap(dailySpend: List<DailySpend>) {
+        val ctx = requireContext()
+
+        //current date as the header
+        val now = System.currentTimeMillis()
+        val monthLabelFormat = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
+        binding.heatmapMonthLabel.text = monthLabelFormat.format(java.util.Date(now))
+
+        //labels for each day
+        binding.heatmapWeekdays.removeAllViews()
+        for (label in listOf("M", "T", "W", "T", "F", "S", "S")) {
+            binding.heatmapWeekdays.addView(makeWeekdayLabel(ctx, label))
+        }
+
+        //calculate total spent on each day of the month that has expenses
+        val byDayOfMonth = mutableMapOf<Int, Double>()
+        for (entry in dailySpend) {
+            //daykey is yyyy-mm-dd so we only take the last 2
+            val day = entry.dayKey.takeLast(2).toIntOrNull() ?: continue
+            byDayOfMonth[day] = entry.total
+        }
+
+        //figure out what weekday the 1st is on and how many days are in that month
+        val cal = java.util.Calendar.getInstance()
+        cal.timeInMillis = now
+        cal.set(java.util.Calendar.DAY_OF_MONTH, 1)
+        //some black magic math to get monday to equal 0 and sunday to equal 6
+        val firstWeekday = (cal.get(java.util.Calendar.DAY_OF_WEEK) + 5) % 7
+        val daysInMonth = cal.getActualMaximum(java.util.Calendar.DAY_OF_MONTH)
+
+        //fetch the most expensive day to scale the rest of the heatmap off of
+        val maxSpendDay = byDayOfMonth.values.maxOrNull() ?: 0.0
+
+        val grid = binding.heatmapGrid
+        grid.removeAllViews()
+        //fill spaces with empty cells until its the first day of the month
+        for (i in 0 until firstWeekday) {
+            grid.addView(makeEmptyCell(ctx))
+        }
+        //grid for the rest of the days
+        for (day in 1..daysInMonth) {
+            val spent = byDayOfMonth[day] ?: 0.0
+            grid.addView(makeDayCell(ctx, day, spent, maxSpendDay))
+        }
+
+    }
+
+    //header label for the cells (M, T, etc) for each column
+    private fun makeWeekdayLabel(ctx: android.content.Context, text: String): TextView {
+        return TextView(ctx).apply {
+            this.text = text
+            textSize = 11f
+            setTextColor(ContextCompat.getColor(ctx, R.color.text_secondary))
+            gravity = Gravity.CENTER
+            val lp = GridLayout.LayoutParams()
+            lp.width = 0
+            lp.height = GridLayout.LayoutParams.WRAP_CONTENT
+            lp.columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
+            layoutParams = lp
+        }
+    }
+
+    //empty cells for the potentially empty days at the start of the month
+    private fun makeEmptyCell(ctx: android.content.Context): View {
+        return View(ctx).apply {
+            val lp = GridLayout.LayoutParams()
+            val cellSize = dpToPx(ctx, 36)
+            lp.width = cellSize
+            lp.height = cellSize
+            lp.columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
+            lp.setMargins(dpToPx(ctx, 2), dpToPx(ctx, 2), dpToPx(ctx, 2), dpToPx(ctx, 2))
+            layoutParams = lp
+        }
+    }
+
+    //cells for the days of each month
+    private fun makeDayCell(
+        ctx: android.content.Context,
+        day: Int,
+        spent: Double,
+        maxSpend: Double
+    ): View {
+        val frame = android.widget.FrameLayout(ctx)
+        val lp = GridLayout.LayoutParams()
+        val cellSize = dpToPx(ctx, 36)
+        lp.width = cellSize
+        lp.height = cellSize
+        lp.columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
+        lp.setMargins(dpToPx(ctx, 2), dpToPx(ctx, 2), dpToPx(ctx, 2), dpToPx(ctx, 2))
+        frame.layoutParams = lp
+
+        //background gradient colour that becomes more intense based on where the most money was spent
+        val intensity = if (maxSpend <= 0.0) 0.0 else (spent / maxSpend) //intensity is divided by the max spend day that month to scale
+        val bg = ContextCompat.getDrawable(ctx, R.drawable.hm_cell)?.mutate() as? GradientDrawable
+        bg?.setColor(heatColour(ctx, intensity))
+        frame.background = bg
+
+        //day number is placed on top of the cell
+        val numLabel = TextView(ctx).apply {
+            text = day.toString()
+            textSize = 12f
+            //the background is dark so light text is needed, however when the instensity of the
+            //gradient increases it becomes hard to see light numbers so it gets swapped to black
+            setTextColor(ContextCompat.getColor(ctx,
+                if (intensity > 0.5) R.color.bg_app else R.color.text_secondary))
+            gravity = Gravity.CENTER
+            val numLp = android.widget.FrameLayout.LayoutParams(
+                android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
+                android.widget.FrameLayout.LayoutParams.MATCH_PARENT
+            )
+            layoutParams = numLp
+        }
+        frame.addView(numLabel)
+        return frame
+    }
+
+    private fun heatColour(ctx: android.content.Context, intensity: Double): Int {
+        //intensity is measured between 0 and 1 as a float, floats are weird but kotlin has coerceIn
+        //which makes sure no rounding issues happen
+        val stay = intensity.coerceIn(0.0, 1.0)
+        //the starting point for the gradient is the background colour
+        val cold = ContextCompat.getColor(ctx, R.color.bg_card)
+        //the end point is the orange colour of the dashboard
+        val hot = ContextCompat.getColor(ctx, R.color.accent_dashboard)
+
+        val r = howMuchBlend(Color.red(cold), Color.red(hot), stay)
+        val g = howMuchBlend(Color.green(cold), Color.green(hot), stay)
+        val b = howMuchBlend(Color.blue(cold), Color.blue(hot), stay)
+        return Color.rgb(r, g, b)
+    }
+
+
+    //this function does the math to tell heatColour how much it should blend the hot and cold
+    private fun howMuchBlend(start: Int, end: Int, t: Double): Int =
+        (start + (end -start) * t).toInt()
+
+    private fun dpToPx(ctx: android.content.Context, dp: Int): Int {
+        val density = ctx.resources.displayMetrics.density
+        return (dp * density).toInt()
     }
 
     private fun toast(msg: String) {
