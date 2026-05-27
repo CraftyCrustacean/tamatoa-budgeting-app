@@ -2,6 +2,7 @@
 plugins {
     alias(libs.plugins.android.application)
     id("com.google.devtools.ksp") version "2.3.6"
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -61,4 +62,9 @@ dependencies {
 
     //charts for dashboard
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
+
+    //firebase dependencies
+    implementation(platform("com.google.firebase:firebase-bom:34.13.0"))
+    implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.firebase:firebase-database")
 }
