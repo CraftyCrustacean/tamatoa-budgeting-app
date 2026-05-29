@@ -2,14 +2,6 @@ package com.example.tamatoa
 
 import android.content.Context
 
-/**
- * Tiny wrapper around SharedPreferences for "which user is logged in right now".
- *
- * Reference: https://developer.android.com/training/data-storage/shared-preferences
- *
- * SharedPreferences is Android's built-in key/value store - simpler than the
- * database for one or two values that need to survive between app launches.
- */
 //A helper to tell us which user is logged in, using the built in SharedPreferences
 //to store a couple values between app launches
 //information found at: https://developer.android.com/training/data-storage/shared-preferences
