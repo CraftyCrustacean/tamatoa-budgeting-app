@@ -15,7 +15,7 @@ object Session {
         return FirebaseAuth.getInstance().currentUser?.uid
     }
 
-    fun isSignedIn(context: Context): Boolean = getUserId(context) != null
+    fun isLoggedIn(context: Context): Boolean = getUserId(context) != null
 
     //signs out the current user
     fun clear(context: Context) {

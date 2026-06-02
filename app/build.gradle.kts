@@ -52,11 +52,6 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)
 
-    //room dependencies
-    implementation("androidx.room:room-runtime:2.7.0")
-    implementation("androidx.room:room-ktx:2.7.0")
-    ksp("androidx.room:room-compiler:2.7.0")
-
     //coroutines for background db calls
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 

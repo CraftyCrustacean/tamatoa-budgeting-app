@@ -48,7 +48,7 @@ class RegisterActivity : AppCompatActivity() {
             return
         }
 
-        val email = AuthHelper.toSyntheticEmail(rawUsername)
+        val email = AuthHelper.toFakeEmail(rawUsername)
         Log.d(TAG, "attempt register: creating $email")
 
         binding.registerButton.isEnabled = false
@@ -66,7 +66,7 @@ class RegisterActivity : AppCompatActivity() {
 
     private fun goToDashboard() {
         startActivity(Intent(this, MainActivity::class.java))
-        finishAffinity()   // close LoginActivity too
+        finishAffinity()
     }
 
 
