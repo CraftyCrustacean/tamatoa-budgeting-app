@@ -6,7 +6,6 @@ import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import com.example.tamatoa.data.AppDatabase
 import com.example.tamatoa.databinding.ActivityLoginBinding
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
@@ -61,15 +60,18 @@ class LoginActivity : AppCompatActivity() {
 
         binding.loginButton.isEnabled = false
         auth.signInWithEmailAndPassword(email, password)
-            .addOnSuccessListener { result ->
-                Log.d(TAG, "signed in as ${result.user?.uid}")
+        .addOnCompleteListener { task ->
+            binding.loginButton.isEnabled = true
+
+            if (task.isSuccessful) {
+                Log.d(TAG, "signed in as ${task.result?.user?.uid}")
                 goToDashboard()
-            }
-            .addOnFailureListener { e ->
+            } else {
+                val e = task.exception
                 Log.e(TAG, "sign-in failed", e)
-                binding.loginButton.isEnabled = true
-                toast("Login failed: ${(e)}")
+                toast(e?.message ?: "Login failed")
             }
+        }
     }
 
     private fun goToDashboard() {

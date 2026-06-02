@@ -5,8 +5,11 @@ import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import com.example.tamatoa.data.FirebaseRepository
 import com.example.tamatoa.databinding.ActivityRegisterBinding
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.launch
 
 //Allows users to create an account
 //information found at largely the same places as the login activity
@@ -53,14 +56,35 @@ class RegisterActivity : AppCompatActivity() {
 
         binding.registerButton.isEnabled = false
         auth.createUserWithEmailAndPassword(email, password)
-            .addOnSuccessListener { result ->
-                Log.d(TAG, "registered ${result.user?.uid}")
-                goToDashboard()
-            }
-            .addOnFailureListener { e ->
-                Log.e(TAG, "register failed", e)
+            .addOnCompleteListener { task ->
                 binding.registerButton.isEnabled = true
-                toast("Could not register: ${(e)}")
+
+                if (task.isSuccessful) {
+                    val uid = task.result?.user?.uid
+                    if (uid == null) {
+                        Log.e(TAG, "registered but no ID returned")
+                        toast("Registration error")
+                        return@addOnCompleteListener
+                    }
+                    Log.d(TAG, "registered $uid")
+
+                    lifecycleScope.launch {
+                        try {
+                            val repo = FirebaseRepository.getInstance()
+                            repo.createUser(uid, rawUsername.trim())
+                            repo.seedDefaultCategories(uid)
+                            Log.d(TAG, "user record and seed categories created")
+                            goToDashboard()
+                        } catch (e: Exception) {
+                            Log.e(TAG, "post register setup failed", e)
+                            toast("Registration partially succeeded, please log in")
+                        }
+                    }
+                } else {
+                    val e = task.exception
+                    Log.e(TAG, "register failed", e)
+                    toast(e?.message ?: "Could not register")
+                }
             }
     }
 
@@ -68,7 +92,6 @@ class RegisterActivity : AppCompatActivity() {
         startActivity(Intent(this, MainActivity::class.java))
         finishAffinity()
     }
-
 
     private fun toast(msg: String) {
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()

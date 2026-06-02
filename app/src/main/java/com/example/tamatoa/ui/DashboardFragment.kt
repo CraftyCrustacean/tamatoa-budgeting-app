@@ -14,7 +14,6 @@ import androidx.lifecycle.lifecycleScope
 import com.example.tamatoa.AddExpenseActivity
 import com.example.tamatoa.R
 import com.example.tamatoa.Session
-import com.example.tamatoa.data.AppDatabase
 import com.example.tamatoa.data.BudgetEntity
 import com.example.tamatoa.data.DateUtils
 import com.example.tamatoa.data.RecurringExpenseGenerator
@@ -37,6 +36,7 @@ import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
 import android.widget.GridLayout
 import android.widget.TextView
+import com.example.tamatoa.data.FirebaseRepository
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -108,11 +108,14 @@ class DashboardFragment : Fragment() {
     }
 
     private fun runRecurringGeneratorThenReload() {
-        val userId = Session.getUserId(requireContext())
+        val userId = Session.getUserId(requireContext()) ?: run {
+            refresh()
+            return
+        }
         lifecycleScope.launch {
             try {
-                val db = AppDatabase.getInstance(requireContext())
-                RecurringExpenseGenerator.generateForCurrentMonth(db, userId)
+                val repo = FirebaseRepository.getInstance()
+                RecurringExpenseGenerator.generateForCurrentMonth(repo, userId)
             } catch (e: Exception) {
                 Log.e(TAG, "run recurring generator: error", e)
             }
@@ -123,16 +126,16 @@ class DashboardFragment : Fragment() {
     //get the budget of logged in user and how much theyve spent over the current date range
     //also get the total amount spent per category in the current date range
     private fun refresh() {
-        val userId = Session.getUserId(requireContext())
+        val userId = Session.getUserId(requireContext()) ?: return
         lifecycleScope.launch {
             try {
-                val db = AppDatabase.getInstance(requireContext())
-                val budget = db.budgetDao().get(userId)
-                val spend = db.expenseDao().getTotalSpend(userId, rangeStart, rangeEnd)
-                val totals = db.expenseDao().getCategoryTotals(userId, rangeStart, rangeEnd)
+                val repo = FirebaseRepository.getInstance()
+                val budget = repo.getBudget(userId)
+                val spend = repo.getTotalSpend(userId, rangeStart, rangeEnd)
+                val totals = repo.getCategoryTotals(userId, rangeStart, rangeEnd)
                 val monthStart = DateUtils.startOfMonth(System.currentTimeMillis())
                 val monthEnd = DateUtils.endOfMonth(System.currentTimeMillis())
-                val dailySpend = db.expenseDao().getDailySpend(userId, monthStart, monthEnd)
+                val dailySpend = repo.getDailySpend(userId, monthStart, monthEnd)
 
                 Log.d(TAG, "refresh: budget=${budget?.maxSpend} spent=$spend categories=${totals.size}")
                 renderBudgetCard(budget, spend)
@@ -273,13 +276,14 @@ class DashboardFragment : Fragment() {
 
     //write the budget to the database
     private fun saveBudget(maxSpend: Double, minSave: Double) {
-        val userId = Session.getUserId(requireContext())
+        val userId = Session.getUserId(requireContext()) ?: run {
+            toast("Not signed in")
+            return
+        }
         lifecycleScope.launch {
             try {
-                val db = AppDatabase.getInstance(requireContext())
-                db.budgetDao().upsert(
-                    BudgetEntity(userId = userId, maxSpend = maxSpend, minSave = minSave)
-                )
+                val repo = FirebaseRepository.getInstance()
+                repo.upsertBudget(userId, maxSpend, minSave)
                 Log.d(TAG, "save budget: max=$maxSpend min=$minSave")
                 toast("Budget saved")
                 refresh()

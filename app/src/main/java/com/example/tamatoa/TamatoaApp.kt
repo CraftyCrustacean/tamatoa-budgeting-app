@@ -15,9 +15,9 @@ class TamatoaApp : Application() {
         try {
             //enable offline persistence before anything else happens, anything cached is used
             FirebaseDatabase.getInstance().setPersistenceEnabled(true)
-            Log.d(TAG, "Firebase offline persistence enabled")
+            Log.d(TAG, "Firebase offline persistence on")
         } catch (e: Exception) {
-            Log.w(TAG, "Persistence already enabled, ignoring: ${e.message}")
+            Log.w(TAG, "Persistence already on, ignoring: ${e.message}")
         }
     }
 }

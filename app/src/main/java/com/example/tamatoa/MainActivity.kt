@@ -7,10 +7,15 @@ import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
+import com.example.tamatoa.data.DateUtils
+import com.example.tamatoa.data.FirebaseRepository
 import com.example.tamatoa.databinding.ActivityMainBinding
 import com.example.tamatoa.ui.AchievementsFragment
 import com.example.tamatoa.ui.DashboardFragment
 import com.example.tamatoa.ui.TransactionsFragment
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 //The thing that holds the nave buttons and swaps fragments into the content area
 //information found at: https://developer.android.com/guide/navigation/navigation-getting-started
@@ -31,7 +36,6 @@ class MainActivity : AppCompatActivity() {
             Log.d(TAG, "On Create: not logged in, redirecting to login")
             startActivity(Intent(this, LoginActivity::class.java))
             finish()
-//            recordTodayAppOpen()
             return
         }
 
@@ -57,6 +61,9 @@ class MainActivity : AppCompatActivity() {
             tintNavForTab(item.itemId)
             true
         }
+
+        recordTodayAppOpen()
+
     }
 
     private fun showFragment(fragment: Fragment) {
@@ -79,20 +86,17 @@ class MainActivity : AppCompatActivity() {
         binding.bottomNav.itemBackground = drawable
     }
 
-    //function to track if the app was opened today for badge tracking
-    //runblocking is used so that this is in place before any other screen querys the count
-//    private fun recordTodayAppOpen() {
-//        val userId = Session.getUserId(this)
-//        if (userId == -1L) return
-//        val today = DateUtils.dayKey(System.currentTimeMillis())
-//        try {
-//            runBlocking {
-//                val db = AppDatabase.getInstance(this@MainActivity)
-//                db.appOpenDao().record(AppOpenEntity(userId = userId, dateKey = today))
-//            }
-//            Log.d(TAG, "recordTodayAppOpen: $today")
-//        } catch (e: Exception) {
-//            Log.e(TAG, "recordTodayAppOpen: error", e)
-//        }
-//    }
+//    function to track if the app was opened today for badge tracking
+    private fun recordTodayAppOpen() {
+    val userId = Session.getUserId(this) ?: return
+    val today = DateUtils.dayKey(System.currentTimeMillis())
+    try {
+        lifecycleScope.launch  {
+            FirebaseRepository.getInstance().recordAppOpen(userId, today)
+        }
+        Log.d(TAG, "record today app open: $today")
+        } catch (e: Exception) {
+            Log.e(TAG, "record today app open: error", e)
+        }
+    }
 }
