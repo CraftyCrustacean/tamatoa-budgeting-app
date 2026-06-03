@@ -2,6 +2,7 @@
 plugins {
     alias(libs.plugins.android.application)
     id("com.google.devtools.ksp") version "2.3.6"
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -51,14 +52,14 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)
 
-    //room dependencies
-    implementation("androidx.room:room-runtime:2.7.0")
-    implementation("androidx.room:room-ktx:2.7.0")
-    ksp("androidx.room:room-compiler:2.7.0")
-
     //coroutines for background db calls
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
     //charts for dashboard
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
+
+    //firebase dependencies
+    implementation(platform("com.google.firebase:firebase-bom:34.13.0"))
+    implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.firebase:firebase-database")
 }

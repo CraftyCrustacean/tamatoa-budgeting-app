@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "252159392279",
+    "firebase_url": "https://tamatoa-57b49-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "tamatoa-57b49",
+    "storage_bucket": "tamatoa-57b49.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:252159392279:android:5e3215a3ef02a3e110ba52",
+        "android_client_info": {
+          "package_name": "com.example.tamatoa"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDV0tEHI9x0We1ndUs-62CC6jD8E6q2bv0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

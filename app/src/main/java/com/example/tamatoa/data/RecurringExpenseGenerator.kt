@@ -11,39 +11,37 @@ object RecurringExpenseGenerator {
 
     private const val TAG = "RecurringGenerator"
 
-    suspend fun generateForCurrentMonth(db: AppDatabase, userId: Long) {
+    suspend fun generateForCurrentMonth(repo: FirebaseRepository, userId: String) {
+        val templates = repo.getRecurringTemplates(userId)
+        if (templates.isEmpty()) return
+
         val now = System.currentTimeMillis()
-        val monthStart = DateUtils.startOfMonth(now)
-        val monthEnd = DateUtils.endOfMonth(now)
+        val thisMonthStart = DateUtils.startOfMonth(now)
 
-        val expenseDao = db.expenseDao()
-        val templates = expenseDao.getRecurringTemplates(userId)
-        Log.d(TAG, "generateForCurrentMonth: user=$userId templates=${templates.size}")
-
-        var created = 0
-        //dont generate a duplicate, check if the template already exists
         for (template in templates) {
-            if (template.dateMillis in monthStart..monthEnd) {
-                Log.d(TAG, "  template ${template.id} was created this month, skipping")
-                continue
-            }
-            val existing = expenseDao.findGeneratedCopy(template.id, monthStart, monthEnd)
-            if (existing != null) {
-                Log.d(TAG, "  template ${template.id} already has copy ${existing.id}")
+            if (template.dateMillis >= thisMonthStart) continue
+
+            val existingCopy = repo.findGeneratedCopy(userId, template.id, now)
+            if (existingCopy != null) {
+                Log.d(TAG, "skip ${template.description}: already generated")
                 continue
             }
 
-            val copy = template.copy(
-                id = 0,
-                dateMillis = DateUtils.sameDayThisMonth(template.dateMillis),
-                isRecurring = false, //the copy musnt duplicate itself
+            val copyDate = DateUtils.sameDayThisMonth(template.dateMillis)
+
+            repo.insertExpense(
+                userId = userId,
+                categoryId = template.categoryId,
+                categoryName = template.categoryName,
+                categoryColour = template.categoryColour,
+                dateMillis = copyDate,
+                description = template.description,
+                amount = template.amount,
+                photoPath = null,
+                isRecurring = false,
                 recurringSourceId = template.id
             )
-            val newId = expenseDao.insert(copy)
-            Log.d(TAG, "  generated copy id=$newId from template ${template.id}")
-            created++
+            Log.d(TAG, "generated copy of ${template.description}")
         }
-
-        Log.d(TAG, "generateForCurrentMonth: created $created new entries")
     }
 }

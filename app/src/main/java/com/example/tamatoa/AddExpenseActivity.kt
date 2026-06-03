@@ -12,10 +12,10 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
-import com.example.tamatoa.data.AppDatabase
 import com.example.tamatoa.data.CategoryEntity
 import com.example.tamatoa.data.DateUtils
 import com.example.tamatoa.data.ExpenseEntity
+import com.example.tamatoa.data.FirebaseRepository
 import com.example.tamatoa.databinding.ActivityAddExpenseBinding
 import kotlinx.coroutines.launch
 import java.io.File
@@ -87,11 +87,11 @@ class AddExpenseActivity : AppCompatActivity() {
 
     //fetch the user added categories to load with the pre added ones
     private fun loadCategories() {
-        val userId = Session.getUserId(this)
+        val userId = Session.getUserId(this) ?: return
         lifecycleScope.launch {
             try {
-                val db = AppDatabase.getInstance(this@AddExpenseActivity)
-                availableCategories = db.categoryDao().getForUser(userId)
+                val repo = FirebaseRepository.getInstance()
+                availableCategories = repo.getCategoriesForUser(userId)
                 Log.d(TAG, "load categories: ${availableCategories.size} loaded")
             } catch (e: Exception) {
                 Log.e(TAG, "load categories: error", e)
@@ -184,19 +184,17 @@ class AddExpenseActivity : AppCompatActivity() {
 
     private fun createCategory(name: String, colour: String) {
         //fetch the user id
-        val userId = Session.getUserId(this)
+        val userId = Session.getUserId(this)?: return
         //call on roomdb to use the doas
         lifecycleScope.launch {
             try {
-                val db = AppDatabase.getInstance(this@AddExpenseActivity)
+                val repo = FirebaseRepository.getInstance()
                 //add the new category to the db with current user id, cat name and colour
-                val newId = db.categoryDao().insert(
-                    CategoryEntity(userId = userId, name = name, colour = colour)
-                )
+                val newId = repo.insertCategory(userId, name, colour)
                 Log.d(TAG, "create category: '$name' ($colour) -> id=$newId")
 
                 //refresh the list to include the new category
-                availableCategories = db.categoryDao().getForUser(userId)
+                availableCategories = repo.getCategoriesForUser(userId)
                 selectedCategory = availableCategories.firstOrNull { it.id == newId }
                 updateCategoryLabel()
                 toast("Category created")
@@ -294,21 +292,24 @@ class AddExpenseActivity : AppCompatActivity() {
         )
 
         // Insert the user entered data into the database
-        val userId = Session.getUserId(this)
+        val userId = Session.getUserId(this) ?: run {
+            toast("Not signed in")
+            return
+        }
         lifecycleScope.launch {
             try {
-                val db = AppDatabase.getInstance(this@AddExpenseActivity)
-                val newId = db.expenseDao().insert(
-                    ExpenseEntity(
-                        userId = userId,
-                        categoryId = category.id,
-                        dateMillis = selectedDateMillis,
-                        description = note,
-                        amount = amount,
-                        photoPath = savedPhotoPath,
-                        isRecurring = isRecurring,
-                        recurringSourceId = null
-                    )
+                val repo = FirebaseRepository.getInstance()
+                val newId = repo.insertExpense(
+                    userId = userId,
+                    categoryId = category.id,
+                    categoryName = category.name,
+                    categoryColour = category.colour,
+                    dateMillis = selectedDateMillis,
+                    description = note,
+                    amount = amount,
+                    photoPath = savedPhotoPath,
+                    isRecurring = isRecurring,
+                    recurringSourceId = null
                 )
                 Log.d(TAG, "attempted save: inserted id=$newId")
                 toast("Saved")

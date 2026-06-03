@@ -6,8 +6,8 @@ import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import com.example.tamatoa.data.AppDatabase
 import com.example.tamatoa.databinding.ActivityLoginBinding
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 
 //login screen where user can login or click a button to register instead
@@ -18,6 +18,7 @@ import kotlinx.coroutines.launch
 class LoginActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityLoginBinding
+    private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
 
     companion object {
         private const val TAG = "LoginActivity"
@@ -28,10 +29,10 @@ class LoginActivity : AppCompatActivity() {
         binding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // go to main screen if someone is already logged in
-        if (Session.isLoggedIn(this)) {
-            Log.d(TAG, "on create: already logged in, skipping login")
-            goToMain()
+        // If already signed in skip the log in screen
+        if (auth.currentUser != null) {
+            Log.d(TAG, "already signed in as ${auth.currentUser?.uid}")
+            goToDashboard()
             return
         }
 
@@ -41,53 +42,44 @@ class LoginActivity : AppCompatActivity() {
         }
     }
 
-    // try to log user in, with some error checks
     private fun attemptLogin() {
-        val username = binding.usernameInput.text?.toString()?.trim().orEmpty()
+        val rawUsername = binding.usernameInput.text?.toString().orEmpty()
         val password = binding.passwordInput.text?.toString().orEmpty()
 
-        //if no information is entered ask them to put it in
-        if (username.isEmpty() || password.isEmpty()) {
-            Toast.makeText(this, "Please enter a username and password",
-                Toast.LENGTH_SHORT).show()
+        AuthHelper.validateUsername(rawUsername)?.let {
+            toast(it)
+            return
+        }
+        if (password.isEmpty()) {
+            toast("Please enter your password")
             return
         }
 
-        // call on the db to check of username and password match a registered user
-        // in a try catch block to handle unknown errors
-        lifecycleScope.launch {
-            try {
-                val db = AppDatabase.getInstance(this@LoginActivity)
-                val user = db.userDao().login(username, password)
+        val email = AuthHelper.toFakeEmail(rawUsername)
+        Log.d(TAG, "attempt login: signing in as $email")
 
-                //if no match is found tell the user something is wrong
-                if (user == null) {
-                    Log.d(TAG, "attempted login: bad credentials for '$username'")
-                    Toast.makeText(
-                        this@LoginActivity,
-                        "Wrong username or password",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    //if user is found successful login
-                } else {
-                    Log.d(TAG, "attempted login: success for '$username' id=${user.id}")
-                    Session.setUserId(this@LoginActivity, user.id)
-                    goToMain()
-                }
-                //if something weird broke, prompt user to try again
-            } catch (e: Exception) {
-                Log.e(TAG, "attempted login: error", e)
-                Toast.makeText(
-                    this@LoginActivity,
-                    "Something went wrong, please try again",
-                    Toast.LENGTH_SHORT
-                ).show()
+        binding.loginButton.isEnabled = false
+        auth.signInWithEmailAndPassword(email, password)
+        .addOnCompleteListener { task ->
+            binding.loginButton.isEnabled = true
+
+            if (task.isSuccessful) {
+                Log.d(TAG, "signed in as ${task.result?.user?.uid}")
+                goToDashboard()
+            } else {
+                val e = task.exception
+                Log.e(TAG, "sign-in failed", e)
+                toast(e?.message ?: "Login failed")
             }
         }
     }
 
-    private fun goToMain() {
+    private fun goToDashboard() {
         startActivity(Intent(this, MainActivity::class.java))
         finish()
+    }
+
+    private fun toast(msg: String) {
+        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
     }
 }

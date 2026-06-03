@@ -13,9 +13,9 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import com.example.tamatoa.LoginActivity
 import com.example.tamatoa.Session
-import com.example.tamatoa.data.AppDatabase
 import com.example.tamatoa.data.BadgeEvaluator
 import com.example.tamatoa.data.BadgeState
+import com.example.tamatoa.data.FirebaseRepository
 import com.example.tamatoa.databinding.FragmentAchievementsBinding
 import kotlinx.coroutines.launch
 
@@ -61,11 +61,11 @@ class AchievementsFragment : Fragment() {
     }
 
     private fun evaluateAndShow() {
-        val userId = Session.getUserId(requireContext())
+        val userId = Session.getUserId(requireContext()) ?: return
         lifecycleScope.launch {
             try {
-                val db = AppDatabase.getInstance(requireContext())
-                val states = BadgeEvaluator.evaluate(db, userId)
+                val repo = FirebaseRepository.getInstance()
+                val states = BadgeEvaluator.evaluate(repo, userId)
                 Log.d(TAG, "evaluate and show: ${states.count { it.earned }} of ${states.size} earned")
                 adapter.submit(states)
             } catch (e: Exception) {
@@ -101,11 +101,11 @@ class AchievementsFragment : Fragment() {
             .setTitle("Load demo data?")
             .setMessage("Adds months of expense history so the achievements can show as earned for the demo")
             .setPositiveButton("Load") { _, _ ->
-                val userId = Session.getUserId(requireContext())
+                val userId = Session.getUserId(requireContext()) ?: return@setPositiveButton
                 lifecycleScope.launch {
                     try {
-                        val db = AppDatabase.getInstance(requireContext())
-                        com.example.tamatoa.data.DemoDataSeeder.seed(db, userId)
+                        val repo = FirebaseRepository.getInstance()
+                        com.example.tamatoa.data.DemoDataSeeder.seed(repo, userId)
                         Log.d(TAG, "demo data seeded")
                         evaluateAndShow()
                         android.widget.Toast.makeText(
@@ -138,11 +138,14 @@ class AchievementsFragment : Fragment() {
     //fetches every expense for the logged in user and writes it to a csv file
     //shows the file path as a toast
     private fun exportCsv() {
-        val userId = Session.getUserId(requireContext())
+        val userId = Session.getUserId(requireContext()) ?: run {
+            Toast.makeText(requireContext(), "Not signed in", Toast.LENGTH_SHORT).show()
+            return
+        }
         lifecycleScope.launch {
             try {
-                val db = AppDatabase.getInstance(requireContext())
-                val rows = db.expenseDao().getAllForUser(userId)
+                val repo = FirebaseRepository.getInstance()
+                val rows = repo.getAllExpensesForUser(userId)
 
                 if (rows.isEmpty()) {
                     Toast.makeText(requireContext(),
