@@ -8,6 +8,14 @@ object BadgeEvaluator {
 
     private const val TAG = "BadgeEvaluator"
 
+    private data class EvaluationContext(
+        val budget: BudgetEntity?,
+        val user: UserEntity?,
+        val allExpenses: List<ExpenseEntity>,
+        val appOpenCount: Int,
+        val now: Long = System.currentTimeMillis()
+    )
+
     suspend fun evaluate(repo: FirebaseRepository, userId: String): List<BadgeState> {
         //what badges have already been earned
         val earnedIds = repo.getEarnedBadgeIds(userId)
